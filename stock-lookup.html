@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Annem FMC Store — Stock Lookup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #050810;
+      --surface: #0c1120;
+      --surface2: #111a2e;
+      --accent: #00e5ff;
+      --accent2: #ff6b35;
+      --accent3: #39ff14;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --border: rgba(0,229,255,0.15);
+      --glow: 0 0 20px rgba(0,229,255,0.3);
+      --card-glow: 0 0 40px rgba(0,229,255,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .scanline {
+      position: fixed;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scan 4s linear infinite;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.4;
+    }
+
+    @keyframes scan {
+      0% { top: -2px; }
+      100% { top: 100vh; }
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .brand-tag {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      opacity: 0.7;
+    }
+
+    .title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: clamp(36px, 8vw, 64px);
+      font-weight: 700;
+      line-height: 1;
+      color: #fff;
+      letter-spacing: -1px;
+    }
+
+    .title span {
+      color: var(--accent);
+      text-shadow: var(--glow);
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 12px;
+      letter-spacing: 1px;
+    }
+
+    /* Corner decorations */
+    .corner-decor {
+      display: inline-block;
+      width: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent));
+      vertical-align: middle;
+      margin: 0 16px;
+      opacity: 0.5;
+    }
+    .corner-decor.right {
+      background: linear-gradient(90deg, var(--accent), transparent);
+    }
+
+    /* Setup Banner */
+    .setup-banner {
+      background: linear-gradient(135deg, rgba(255,107,53,0.1), rgba(255,107,53,0.05));
+      border: 1px solid rgba(255,107,53,0.4);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .setup-banner .icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
+
+    .setup-banner h3 {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 8px;
+    }
+
+    .setup-banner p {
+      font-size: 13px;
+      color: #aaa;
+      line-height: 1.7;
+    }
+
+    .setup-banner code {
+      font-family: 'Share Tech Mono', monospace;
+      background: rgba(255,107,53,0.15);
+      color: var(--accent2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    /* URL Input */
+    .url-section {
+      background: var(--surface);
+      border: 1px solid rgba(255,107,53,0.3);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+
+    .url-section label {
+      display: block;
+      font-size: 11px;
+      color: var(--accent2);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .url-input-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .url-input {
+      flex: 1;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,107,53,0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .url-input:focus { border-color: var(--accent2); }
+    .url-input::placeholder { color: var(--muted); }
+
+    .url-save-btn {
+      background: var(--accent2);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      color: #fff;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .url-save-btn:hover { background: #ff8555; transform: translateY(-1px); }
+
+    .url-status {
+      font-size: 12px;
+      margin-top: 8px;
+      font-family: 'Share Tech Mono', monospace;
+    }
+    .url-status.ok { color: var(--accent3); }
+    .url-status.warn { color: var(--accent2); }
+
+    /* Search Box */
+    .search-section {
+      position: relative;
+      margin-bottom: 40px;
+    }
+
+    .search-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .search-wrap {
+      position: relative;
+      display: flex;
+      gap: 12px;
+    }
+
+    .search-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 24px;
+      color: #fff;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      outline: none;
+      transition: all 0.3s;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: var(--glow), inset 0 0 20px rgba(0,229,255,0.03);
+    }
+
+    .search-input::placeholder {
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 16px;
+      letter-spacing: 1px;
+    }
+
+    .search-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      padding: 18px 32px;
+      color: var(--bg);
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .search-btn:hover {
+      background: #33eeff;
+      transform: translateY(-2px);
+      box-shadow: var(--glow);
+    }
+
+    .search-btn:active { transform: translateY(0); }
+
+    /* Results */
+    .results-area { min-height: 200px; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .result-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .result-count {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    /* Stock Card */
+    .stock-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 0;
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: var(--card-glow);
+      animation: slideIn 0.3s ease forwards;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    @keyframes slideIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-top {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .card-accent-bar {
+      width: 4px;
+      background: linear-gradient(180deg, var(--accent), transparent);
+      flex-shrink: 0;
+    }
+
+    .card-accent-bar.low { background: linear-gradient(180deg, #ff3b3b, transparent); }
+    .card-accent-bar.medium { background: linear-gradient(180deg, #ffb800, transparent); }
+    .card-accent-bar.high { background: linear-gradient(180deg, var(--accent3), transparent); }
+
+    .card-body {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .card-left { flex: 1; min-width: 0; }
+
+    .item-code {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .item-name {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stock-badge {
+      flex-shrink: 0;
+      text-align: right;
+    }
+
+    .stock-number {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 52px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stock-number.high { color: var(--accent3); text-shadow: 0 0 20px rgba(57,255,20,0.4); }
+    .stock-number.medium { color: #ffb800; text-shadow: 0 0 20px rgba(255,184,0,0.4); }
+    .stock-number.low { color: #ff3b3b; text-shadow: 0 0 20px rgba(255,59,59,0.4); }
+    .stock-number.zero { color: var(--muted); }
+
+    .stock-unit {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: right;
+    }
+
+    /* States */
+    .state-box {
+      text-align: center;
+      padding: 60px 20px;
+      border: 1px dashed rgba(100,116,139,0.3);
+      border-radius: 16px;
+    }
+
+    .state-icon { font-size: 48px; margin-bottom: 16px; }
+
+    .state-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .state-sub {
+      font-size: 13px;
+      color: rgba(100,116,139,0.6);
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    /* Loading animation */
+    .loading-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 60px 0;
+    }
+
+    .dot {
+      width: 10px; height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Error */
+    .error-box {
+      background: rgba(255,59,59,0.08);
+      border: 1px solid rgba(255,59,59,0.3);
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .error-box .e-icon { font-size: 20px; flex-shrink: 0; }
+    .error-box .e-text { font-size: 13px; color: #ff7070; line-height: 1.6; }
+    .error-box code { font-family: 'Share Tech Mono'; background: rgba(255,59,59,0.1); padding: 1px 5px; border-radius: 3px; }
+
+    /* All Stock toggle */
+    .all-toggle {
+      text-align: center;
+      margin-top: 32px;
+    }
+
+    .all-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 24px;
+      color: var(--muted);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+
+    .all-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(100,116,139,0.1);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px;
+      color: rgba(100,116,139,0.4);
+      letter-spacing: 2px;
+    }
+
+    @media (max-width: 600px) {
+      .card-body { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .stock-badge { text-align: left; }
+      .stock-number { font-size: 36px; }
+      .search-wrap { flex-direction: column; }
+      .search-btn { width: 100%; }
+      .url-input-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanline"></div>
+
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="brand-tag">● LIVE INVENTORY SYSTEM</div>
+      <h1 class="title">
+        ANNEM <span>FMC</span><br/>STORE
+      </h1>
+      <p class="subtitle">
+        <span class="corner-decor"></span>
+        Stock Lookup — 25/26
+        <span class="corner-decor right"></span>
+      </p>
+    </div>
+
+
+
+    <!-- Search -->
+    <div class="search-section">
+      <span class="search-label">▸ ITEM CODE SEARCH</span>
+      <div class="search-wrap">
+        <input
+          type="text"
+          class="search-input"
+          id="searchInput"
+          placeholder="e.g. CD1, CNC105..."
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <button class="search-btn" onclick="search()">SEARCH</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-area" id="resultsArea">
+      <div class="state-box">
+        <div class="state-icon">📦</div>
+        <div class="state-title">Ready to Search</div>
+        <div class="state-sub">Enter code upar aur SEARCH dabao</div>
+      </div>
+    </div>
+
+    <!-- All Stock -->
+    <div class="all-toggle">
+      <button class="all-btn" onclick="loadAll()">⬇ LOAD ALL STOCK</button>
+    </div>
+
+    <div class="footer">ANNEM FMC STORE 25-26 &nbsp;|&nbsp; LIVE INVENTORY TRACKER</div>
+  </div>
+
+  <script>
+    // =========================================
+    // CONFIG
+    // =========================================
+    let SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyc1BWhaRItzX9E3NDT425FIQqfkoUOOfaZNZDcUAgbXhp5pWzd6UKS9R_JkxuDiGoA/exec';
+
+    window.onload = function() {
+      document.getElementById('searchInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') search();
+      });
+    };
+
+
+
+    // Google Apps Script redirect follow karne ke liye no-cors mode use karna padta hai
+    // Isliye hum script tag trick use karte hain - jo already kaam kar raha hai
+    // Lekin callback parameter support nahi hai toh direct JSON fetch karte hain with mode no-cors fallback
+
+    function fetchData(code) {
+      const url = SCRIPT_URL + (code ? '?code=' + encodeURIComponent(code) : '');
+      return fetch(url, {
+        redirect: 'follow',
+        mode: 'cors'
+      }).then(function(res) {
+        return res.json();
+      });
+    }
+
+    function search() {
+      const code = document.getElementById('searchInput').value.trim().toUpperCase();
+
+      if (!code) {
+        showError('Code enter karo — e.g. <code>CD1</code> ya <code>CNC105</code>');
+        return;
+      }
+
+      showLoading();
+
+      fetchData(code).then(function(data) {
+        if (data.status === 'not_found' || data.data.length === 0) {
+          showNotFound(code);
+        } else {
+          showResults(data.data, '"' + code + '" ke results');
+        }
+      }).catch(function() {
+        // fetch fail hua — JSONP fallback try karo
+        fetchDataJSONP(code).then(function(data) {
+          if (data.status === 'not_found' || data.data.length === 0) {
+            showNotFound(code);
+          } else {
+            showResults(data.data, '"' + code + '" ke results');
+          }
+        }).catch(function() {
+          showError('Connection error. Internet check karo ya page reload karo.');
+        });
+      });
+    }
+
+    function loadAll() {
+      showLoading();
+      fetchData('').then(function(data) {
+        if (data && data.data) {
+          showResults(data.data, 'ALL STOCK');
+        }
+      }).catch(function() {
+        fetchDataJSONP('').then(function(data) {
+          if (data && data.data) showResults(data.data, 'ALL STOCK');
+        }).catch(function() {
+          showError('Data load nahi hua');
+        });
+      });
+    }
+
+    // JSONP fallback
+    function fetchDataJSONP(code) {
+      return new Promise(function(resolve, reject) {
+        const callbackName = 'cb_' + Date.now();
+        const url = SCRIPT_URL + '?callback=' + callbackName + (code ? '&code=' + encodeURIComponent(code) : '');
+        const script = document.createElement('script');
+        script.src = url;
+        const timer = setTimeout(function() {
+          cleanup(); reject(new Error('TIMEOUT'));
+        }, 10000);
+        window[callbackName] = function(data) { cleanup(); resolve(data); };
+        function cleanup() {
+          clearTimeout(timer);
+          delete window[callbackName];
+          if (script.parentNode) script.parentNode.removeChild(script);
+        }
+        script.onerror = function() { cleanup(); reject(new Error('ERROR')); };
+        document.head.appendChild(script);
+      });
+    }
+
+    function getStockLevel(val) {
+      const n = parseInt(val);
+      if (isNaN(n) || n === 0) return 'zero';
+      if (n <= 3) return 'low';
+      if (n <= 10) return 'medium';
+      return 'high';
+    }
+
+    function showResults(items, label) {
+      const area = document.getElementById('resultsArea');
+      const count = items.length;
+
+      let html = `
+        <div class="result-header">
+          <div class="result-title">▸ ${label}</div>
+          <div class="result-count">${count} item${count !== 1 ? 's' : ''} found</div>
+        </div>
+      `;
+
+      items.forEach((item, i) => {
+        const level = getStockLevel(item.stock);
+        html += `
+          <div class="stock-card" style="animation-delay:${i * 0.05}s">
+            <div class="card-top">
+              <div class="card-accent-bar ${level}"></div>
+              <div class="card-body">
+                <div class="card-left">
+                  <div class="item-code">${item.code}</div>
+                  <div class="item-name">${item.itemName}</div>
+                </div>
+                <div class="stock-badge">
+                  <div class="stock-number ${level}">${item.stock}</div>
+                  <div class="stock-unit">units in stock</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      area.innerHTML = html;
+    }
+
+    function showLoading() {
+      document.getElementById('resultsArea').innerHTML = `
+        <div class="loading-dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      `;
+    }
+
+    function showError(msg) {
+      document.getElementById('resultsArea').innerHTML = `
+        <div class="error-box">
+          <div class="e-icon">⚠️</div>
+          <div class="e-text">${msg}</div>
+        </div>
+      `;
+    }
+
+    function showNotFound(code) {
+      document.getElementById('resultsArea').innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">🔍</div>
+          <div class="state-title">Nahi Mila: ${code}</div>
+          <div class="state-sub">Ye code sheet mein nahi hai</div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
